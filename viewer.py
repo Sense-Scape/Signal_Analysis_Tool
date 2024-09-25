@@ -13,6 +13,7 @@ from scipy.fftpack import fft
 from scipy import signal
 
 import numpy as np
+import os
 
 from Components.HorizontalLabelInput import HorizontalLabelInput
 
@@ -112,6 +113,12 @@ class MainWindow(QMainWindow):
 
     def update_image(self):
 
+            # First check if path exists
+            if not(os.path.exists(self.file_path_label.text())):
+                self.show_popup("File Not Found")
+                return
+
+            # Then load it
             data, fs = librosa.load(self.file_path_label.text(),sr=None)
 
             f, t, self.Sxx = signal.spectrogram(data, 
@@ -193,11 +200,24 @@ class MainWindow(QMainWindow):
             self.spectrum_figure.savefig(save_path)
 
     def play_audio(self):
+
+        # First check if path exists
+        if not(os.path.exists(self.file_path_label.text())):
+            self.show_popup("File Not Found")
+            return
+            
         pygame.init()
         pygame.mixer.init()
         pygame.mixer.music.load(self.file_path_label.text())
         pygame.mixer.music.play()
 
+    
+    def show_popup(self, text):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setText(text) 
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
 
 app = QApplication([])
 window = MainWindow()
