@@ -113,45 +113,37 @@ class MainWindow(QMainWindow):
 
     def update_image(self):
 
-            # First check if path exists
-            if not(os.path.exists(self.file_path_label.text())):
-                self.show_popup("File Not Found")
-                return
+        if not(self.load_audio_data()):
+            self.show_popup("File Not Found")
+            return False
 
-            # Then load it
-            data, fs = librosa.load(self.file_path_label.text(),sr=None)
+        f, t, self.Sxx = signal.spectrogram(self.data[1,:], 
+                                            nperseg=int(self.fft_size.getInputText()),
+                                            noverlap=int(self.fft_overlap.getInputText()),
+                                            fs=self.sample_rate_hz, 
+                                            mode="psd", 
+                                            return_onesided=True
+                                            )
 
-            f, t, self.Sxx = signal.spectrogram(data, 
-                                                nperseg=int(self.fft_size.getInputText()),
-                                                noverlap=int(self.fft_overlap.getInputText()),
-                                                fs=fs, 
-                                                mode="psd", 
-                                                return_onesided=True
-                                                )
+            # Split the array into groups
+        tmp = np.abs(self.Sxx)
+        averaging_count = int(self.integration_count.getInputText())
+        groups = np.array_split(self.Sxx, np.arange(averaging_count, tmp.shape[1], averaging_count), axis=1)
+        tmp =np.array([group.sum(axis=1) for group in groups]).T
+        self.Sxx_proc = tmp
 
-             # Split the array into groups
-            tmp = np.abs(self.Sxx)
-            averaging_count = int(self.integration_count.getInputText())
-            groups = np.array_split(self.Sxx, np.arange(averaging_count, tmp.shape[1], averaging_count), axis=1)
-            tmp =np.array([group.sum(axis=1) for group in groups]).T
+        self.freq_max_khz = self.sample_rate_hz/(2*1000)
+        time_max_s = len(self.data[1,:])*1/self.sample_rate_hz
 
-            
-            self.Sxx_proc = tmp
+        # Plot the spectrogram
+        self.axes.clear()
+        self.axes.imshow(20*np.log10(self.Sxx_proc), origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
+        self.axes.set_xlabel('Time [s]')
+        self.axes.set_ylabel('Frequency [KHz]')
+        self.axes.set_title('Spectrogram of \n' + self.file_path_label.text())
 
-            freq_max = fs/(2*1000)
-            time_max = len(data)*1/fs
-
-            print(freq_max)
-
-            # Plot the spectrogram
-            self.axes.clear()
-            self.axes.imshow(20*np.log10(self.Sxx_proc), origin='lower', aspect="auto", extent=[0,time_max, 0, freq_max])
-            self.axes.set_xlabel('Time [s]')
-            self.axes.set_ylabel('Frequency [KHz]')
-            self.axes.set_title('Spectrogram of \n' + self.file_path_label.text())
-
-            # Update the canvas to display the plot
-            self.spectrogram_canvas.draw()
+        # Update the canvas to display the plot
+        self.spectrogram_canvas.draw()
 
     def on_click(self, event):
         if event.inaxes == self.axes:  # Ensure the click is inside the spectrogram plot
@@ -160,14 +152,15 @@ class MainWindow(QMainWindow):
             if self.Sxx is not None:
                 # Get the column corresponding to the clicked x-coordinate (time index)
                 column_data = 20 * np.log10(np.abs(self.Sxx_proc[:, x_click]))
+                freq_axis = np.linspace(1,len(column_data),len(column_data))*self.freq_max_khz/len(column_data)
 
                 # Plot the column data (frequency vs. intensity)
                 self.spectrum_axes.clear()
-                self.spectrum_axes.plot(column_data)
-                self.spectrum_axes.set_xlabel('Frequency [Hz]')
+                self.spectrum_axes.plot(freq_axis,column_data)
+                self.spectrum_axes.set_xlabel('Frequency [KHz]')
                 self.spectrum_axes.set_ylabel('Intensity [Arb dB]')
                 self.spectrum_axes.set_title(f'Spectrum Sample at Time of {x_click} Seconds of \n ' + self.file_path_label.text())
-                
+
                 # Update the column plot canvas
                 self.spectrum_canvas.draw()
 
@@ -198,6 +191,19 @@ class MainWindow(QMainWindow):
         if save_path:
             # Save the current figure as an image
             self.spectrum_figure.savefig(save_path)
+
+    def load_audio_data(self):
+
+        # First check if path exists
+        if not(os.path.exists(self.file_path_label.text())):
+            return False
+
+        # Then load it
+        self.data, self.sample_rate_hz \
+            = librosa.load(self.file_path_label.text(),sr=None, mono=False)
+
+        return True
+
 
     def play_audio(self):
 
