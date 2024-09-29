@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
         # Buttons
 
         self.plot_image_button = QPushButton("Plot Image")
-        self.plot_image_button.clicked.connect(lambda: self.update_image())
+        self.plot_image_button.clicked.connect(lambda: self.update_images())
         input_layout.addWidget(self.plot_image_button)
 
         self.save_image_button = QPushButton("Save Spectrogram")
@@ -115,7 +115,7 @@ class MainWindow(QMainWindow):
         self.Sxx = None  # Store spectrogram data
         self.show()
 
-    def update_image(self):
+    def update_images(self):
 
         if not(self.load_audio_data()):
             self.show_popup("File Not Found")
@@ -130,6 +130,11 @@ class MainWindow(QMainWindow):
         tmp =np.array([group.sum(axis=1) for group in groups]).T
         self.Sxx_proc = tmp
 
+        self.update_spectrogram_image()
+        self.update_spectrum_image(0)
+    
+    def update_spectrogram_image(self):
+        
         self.freq_max_khz = self.sample_rate_hz/(2*1000)
         time_max_s = len(self.data[1,:])*1/self.sample_rate_hz
 
@@ -140,16 +145,13 @@ class MainWindow(QMainWindow):
         self.axes.set_ylabel('Frequency [KHz]')
         self.axes.set_title('Spectrogram of \n' + self.file_path_label.text())
 
-        # Update the canvas to display the plot
         self.spectrogram_canvas.draw()
-
-    def on_click(self, event):
-        if event.inaxes == self.axes:  # Ensure the click is inside the spectrogram plot
-            x_click = int(event.xdata)
-
-            if self.Sxx is not None:
+        
+    def update_spectrum_image(self, spectrum_column_index):
+        
+        if self.Sxx is not None:
                 # Get the column corresponding to the clicked x-coordinate (time index)
-                column_data = 20 * np.log10(np.abs(self.Sxx_proc[:, x_click]))
+                column_data = 20 * np.log10(np.abs(self.Sxx_proc[:, spectrum_column_index]))
                 freq_axis = np.linspace(1,len(column_data),len(column_data))*self.freq_max_khz/len(column_data)
 
                 # Plot the column data (frequency vs. intensity)
@@ -157,10 +159,15 @@ class MainWindow(QMainWindow):
                 self.spectrum_axes.plot(freq_axis,column_data)
                 self.spectrum_axes.set_xlabel('Frequency [KHz]')
                 self.spectrum_axes.set_ylabel('Intensity [Arb dB]')
-                self.spectrum_axes.set_title(f'Spectrum Sample at Time of {x_click} Seconds of \n ' + self.file_path_label.text())
+                self.spectrum_axes.set_title(f'Spectrum Sample at Time of {spectrum_column_index} Seconds of \n ' + self.file_path_label.text())
 
                 # Update the column plot canvas
                 self.spectrum_canvas.draw()
+        
+    def on_click(self, event):
+        if event.inaxes == self.axes:  # Ensure the click is inside the spectrogram plot
+            spectrum_column_index = int(event.xdata)
+            self.update_spectrum_image(spectrum_column_index) 
 
     def load_file(self):
         # Open a file dialog to let the user select a file
