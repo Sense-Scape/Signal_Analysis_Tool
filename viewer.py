@@ -135,7 +135,7 @@ class MainWindow(QMainWindow):
 
         # Plot the spectrogram
         self.axes.clear()
-        self.axes.imshow(self.Sxx, origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
+        self.axes.imshow(self.Sxx[0], origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
         self.axes.set_xlabel('Time [s]')
         self.axes.set_ylabel('Frequency [KHz]')
         self.axes.set_title('Spectrogram of \n' + self.file_path_label.text())
@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
         if self.Sxx is not None:
                 
                 # Get the column corresponding to the clicked x-coordinate (time index)
-                column_data = self.Sxx[:, spectrum_column_index]
+                column_data = self.Sxx[0][:, spectrum_column_index]
                 freq_axis = np.linspace(1,len(column_data),len(column_data))*self.freq_max_khz/len(column_data)
 
                 # Plot the column data (frequency vs. intensity)
@@ -168,7 +168,7 @@ class MainWindow(QMainWindow):
             _, x_max = self.axes.get_xlim()
 
             # Convert the time stamp to the index in spectorgram
-            spectrogram_shape_tuple = np.shape(self.Sxx)
+            spectrogram_shape_tuple = np.shape(self.Sxx[0])
             averaging_count = int(self.integration_count.getInputText())
             spectrum_column_index = int(np.floor(spectrogram_shape_tuple[1]*x_axis_timestamp/x_max))
 
@@ -213,6 +213,8 @@ class MainWindow(QMainWindow):
         self.data, self.sample_rate_hz \
             = librosa.load(self.file_path_label.text(),sr=None, mono=False)
 
+        self.num_channels = np.shape(self.data)[0]
+
         return True
 
 
@@ -254,40 +256,43 @@ class MainWindow(QMainWindow):
     def generate_spectrogram_data(self):
         
         # Generate spectrogram game
+        self.Sxx = {}
         window = self.get_selected_window()
-        SFT = signal.ShortTimeFFT(win=window,
-                            mfft=int(self.fft_size.getInputText()),
-                            hop=int(self.fft_hop.getInputText()),
-                            fs=self.sample_rate_hz,  
-                            fft_mode="onesided"
-                            )
-        self.Sxx = SFT.stft(self.data[1,:])
 
-        # Process data further
-        self.apply_integration()
-        self.apply_spectrum_mode()
+        for i in range(self.num_channels):
+            SFT = signal.ShortTimeFFT(win=window,
+                                mfft=int(self.fft_size.getInputText()),
+                                hop=int(self.fft_hop.getInputText()),
+                                fs=self.sample_rate_hz,  
+                                fft_mode="onesided"
+                                )
+            self.Sxx[i] = SFT.stft(self.data[i,:])
+
+            # Process data further
+            self.apply_integration(i)
+            self.apply_spectrum_mode(i)
 
     
-    def apply_integration(self):
+    def apply_integration(self, channel_index):
 
         # Split the array into groups
-        tmp = np.abs(self.Sxx)
+        tmp = np.abs(self.Sxx[channel_index])
         averaging_count = int(self.integration_count.getInputText())
-        groups = np.array_split(self.Sxx, np.arange(averaging_count, tmp.shape[1], averaging_count), axis=1)
-        self.Sxx = np.array([group.sum(axis=1) for group in groups]).T
+        groups = np.array_split(self.Sxx[channel_index], np.arange(averaging_count, tmp.shape[1], averaging_count), axis=1)
+        self.Sxx[channel_index] = np.array([group.sum(axis=1) for group in groups]).T
     
-    def apply_spectrum_mode(self):
+    def apply_spectrum_mode(self, channel_index):
 
         selected_spectrum_mode = self.spectrum_mode.getInputText()
 
         if selected_spectrum_mode == "Amplitude [dB]":
-           self.Sxx = 20*np.log10(np.abs(self.Sxx))
+           self.Sxx[channel_index] = 20*np.log10(np.abs(self.Sxx[channel_index]))
         elif selected_spectrum_mode == "Amplitude [lin]":
-            self.Sxx = np.abs(self.Sxx)
+            self.Sxx[channel_index] = np.abs(self.Sxx[channel_index])
         elif selected_spectrum_mode == "Phase [Rad]":
-            self.Sxx = np.angle(self.Sxx, deg=False)
+            self.Sxx[channel_index] = np.angle(self.Sxx[channel_index], deg=False)
         elif selected_spectrum_mode == "Phase [Deg]":
-            self.Sxx = np.angle(self.Sxx, deg=True)
+            self.Sxx[channel_index] = np.angle(self.Sxx[channel_index], deg=True)
 
 app = QApplication([])
 window = MainWindow()
