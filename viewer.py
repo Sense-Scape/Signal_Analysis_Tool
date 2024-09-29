@@ -16,6 +16,7 @@ import numpy as np
 import os
 
 from Components.HorizontalLabelInput import HorizontalLabelInput
+from Components.HorizontalLabelComboBox import HorizontalLabelComboBox
 
 class MainWindow(QMainWindow):
 
@@ -79,12 +80,12 @@ class MainWindow(QMainWindow):
         self.fft_hop = HorizontalLabelInput("FFT Hop","256")
         self.integration_count = HorizontalLabelInput("Integration Count","1")
 
-        self.spectrum_mode = QComboBox()
-        self.spectrum_mode.addItem("")
+        self.fft_window = HorizontalLabelComboBox("FFT Window", ["Rect", "Hanning", "Hamming", "Blackman"])
 
         input_layout.addWidget(self.fft_size)
         input_layout.addWidget(self.fft_hop)
         input_layout.addWidget(self.integration_count)
+        input_layout.addWidget(self.fft_window)
 
         # Buttons
 
@@ -121,7 +122,7 @@ class MainWindow(QMainWindow):
             return False
 
         self.generate_spectrogram_data()
-        
+
             # Split the array into groups
         tmp = np.abs(self.Sxx)
         averaging_count = int(self.integration_count.getInputText())
@@ -222,9 +223,26 @@ class MainWindow(QMainWindow):
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.exec()
 
-    def generate_spectrogram_data(self):
+    def get_selected_window(self):
 
-        SFT = signal.ShortTimeFFT( win=np.ones(int(self.fft_size.getInputText())),
+        selected_window = self.fft_window.getInputText()
+        window_length = int(self.fft_size.getInputText())
+        window = np.ones(window_length)
+
+        if selected_window == "Blackman":
+            window = np.blackman(window_length)
+        elif selected_window == "Hamming":
+            window = np.hamming(window_length)
+        elif selected_window == "Hanning":
+            window = np.hanning(window_length)
+
+        return window
+    
+    def generate_spectrogram_data(self):
+        
+        window = self.get_selected_window()
+
+        SFT = signal.ShortTimeFFT(win=window,
                             mfft=int(self.fft_size.getInputText()),
                             hop=int(self.fft_hop.getInputText()),
                             fs=self.sample_rate_hz,  
