@@ -81,11 +81,13 @@ class MainWindow(QMainWindow):
         self.integration_count = HorizontalLabelInput("Integration Count","1")
 
         self.fft_window = HorizontalLabelComboBox("FFT Window", ["Rect", "Hanning", "Hamming", "Blackman"])
+        self.spectrum_mode = HorizontalLabelComboBox("Spectrum Mode", ["Amplitude [dB]", "Amplitude [lin]", "Phase [Rad]", "Phase [Deg]"])
 
         input_layout.addWidget(self.fft_size)
         input_layout.addWidget(self.fft_hop)
         input_layout.addWidget(self.integration_count)
         input_layout.addWidget(self.fft_window)
+        input_layout.addWidget(self.spectrum_mode)
 
         # Buttons
 
@@ -263,11 +265,8 @@ class MainWindow(QMainWindow):
 
         # Process data further
         self.apply_integration()
+        self.apply_spectrum_mode()
 
-        # Convert to logrithm
-        self.Sxx = 20*np.log10(np.abs(self.Sxx))
-
-        print(np.shape(self.Sxx))
     
     def apply_integration(self):
 
@@ -276,6 +275,19 @@ class MainWindow(QMainWindow):
         averaging_count = int(self.integration_count.getInputText())
         groups = np.array_split(self.Sxx, np.arange(averaging_count, tmp.shape[1], averaging_count), axis=1)
         self.Sxx = np.array([group.sum(axis=1) for group in groups]).T
+    
+    def apply_spectrum_mode(self):
+
+        selected_spectrum_mode = self.spectrum_mode.getInputText()
+
+        if selected_spectrum_mode == "Amplitude [dB]":
+           self.Sxx = 20*np.log10(np.abs(self.Sxx))
+        elif selected_spectrum_mode == "Amplitude [lin]":
+            self.Sxx = np.abs(self.Sxx)
+        elif selected_spectrum_mode == "Phase [Rad]":
+            self.Sxx = np.angle(self.Sxx, deg=False)
+        elif selected_spectrum_mode == "Phase [Deg]":
+            self.Sxx = np.angle(self.Sxx, deg=True)
 
 app = QApplication([])
 window = MainWindow()
