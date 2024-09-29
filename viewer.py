@@ -76,11 +76,14 @@ class MainWindow(QMainWindow):
         # Inputs
 
         self.fft_size = HorizontalLabelInput("FFT Size", "256")
-        self.fft_overlap = HorizontalLabelInput("FFT Overlap","0")
+        self.fft_hop = HorizontalLabelInput("FFT Hop","256")
         self.integration_count = HorizontalLabelInput("Integration Count","1")
 
+        self.spectrum_mode = QComboBox()
+        self.spectrum_mode.addItem("")
+
         input_layout.addWidget(self.fft_size)
-        input_layout.addWidget(self.fft_overlap)
+        input_layout.addWidget(self.fft_hop)
         input_layout.addWidget(self.integration_count)
 
         # Buttons
@@ -117,13 +120,13 @@ class MainWindow(QMainWindow):
             self.show_popup("File Not Found")
             return False
 
-        f, t, self.Sxx = signal.spectrogram(self.data[1,:], 
-                                            nperseg=int(self.fft_size.getInputText()),
-                                            noverlap=int(self.fft_overlap.getInputText()),
-                                            fs=self.sample_rate_hz, 
-                                            mode="psd", 
-                                            return_onesided=True
-                                            )
+        SFT = signal.ShortTimeFFT( win=np.ones(int(self.fft_size.getInputText())),
+                                    mfft=int(self.fft_size.getInputText()),
+                                    hop=int(self.fft_hop.getInputText()),
+                                    fs=self.sample_rate_hz,  
+                                    fft_mode="onesided"
+                                    )
+        self.Sxx = SFT.stft(self.data[1,:])
 
             # Split the array into groups
         tmp = np.abs(self.Sxx)
@@ -137,7 +140,7 @@ class MainWindow(QMainWindow):
 
         # Plot the spectrogram
         self.axes.clear()
-        self.axes.imshow(20*np.log10(self.Sxx_proc), origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
+        self.axes.imshow(20*np.log10(np.abs(self.Sxx_proc)), origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
         self.axes.set_xlabel('Time [s]')
         self.axes.set_ylabel('Frequency [KHz]')
         self.axes.set_title('Spectrogram of \n' + self.file_path_label.text())
