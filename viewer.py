@@ -22,7 +22,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Main Window with Input Box")
+        self.setWindowTitle("Insert Funny and Quirky Comment")
 
         # Central widget and layout
         central_widget = QWidget()
@@ -115,7 +115,7 @@ class MainWindow(QMainWindow):
         # Connect the canvas click event
         self.spectrogram_canvas.mpl_connect('button_press_event', self.on_click)
         self.Sxx = None  # Store spectrogram data
-        self.show()
+        self.showMaximized() 
 
     def update_images(self):
 
