@@ -123,13 +123,6 @@ class MainWindow(QMainWindow):
 
         self.generate_spectrogram_data()
 
-            # Split the array into groups
-        tmp = np.abs(self.Sxx)
-        averaging_count = int(self.integration_count.getInputText())
-        groups = np.array_split(self.Sxx, np.arange(averaging_count, tmp.shape[1], averaging_count), axis=1)
-        tmp =np.array([group.sum(axis=1) for group in groups]).T
-        self.Sxx_proc = tmp
-
         self.update_spectrogram_image()
         self.update_spectrum_image(0)
     
@@ -140,7 +133,7 @@ class MainWindow(QMainWindow):
 
         # Plot the spectrogram
         self.axes.clear()
-        self.axes.imshow(20*np.log10(np.abs(self.Sxx_proc)), origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
+        self.axes.imshow(self.Sxx, origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
         self.axes.set_xlabel('Time [s]')
         self.axes.set_ylabel('Frequency [KHz]')
         self.axes.set_title('Spectrogram of \n' + self.file_path_label.text())
@@ -150,8 +143,9 @@ class MainWindow(QMainWindow):
     def update_spectrum_image(self, spectrum_column_index):
         
         if self.Sxx is not None:
+                
                 # Get the column corresponding to the clicked x-coordinate (time index)
-                column_data = 20 * np.log10(np.abs(self.Sxx_proc[:, spectrum_column_index]))
+                column_data = self.Sxx[:, spectrum_column_index]
                 freq_axis = np.linspace(1,len(column_data),len(column_data))*self.freq_max_khz/len(column_data)
 
                 # Plot the column data (frequency vs. intensity)
@@ -166,7 +160,17 @@ class MainWindow(QMainWindow):
         
     def on_click(self, event):
         if event.inaxes == self.axes:  # Ensure the click is inside the spectrogram plot
-            spectrum_column_index = int(event.xdata)
+            
+            # Check where one clicked 
+            x_axis_timestamp = int(event.xdata)
+            _, x_max = self.axes.get_xlim()
+
+            # Convert the time stamp to the index in spectorgram
+            spectrogram_shape_tuple = np.shape(self.Sxx)
+            averaging_count = int(self.integration_count.getInputText())
+            spectrum_column_index = int(np.floor(spectrogram_shape_tuple[1]*x_axis_timestamp/x_max))
+
+            # Plot that part of the spectrogram
             self.update_spectrum_image(spectrum_column_index) 
 
     def load_file(self):
@@ -247,17 +251,32 @@ class MainWindow(QMainWindow):
     
     def generate_spectrogram_data(self):
         
+        # Generate spectrogram game
         window = self.get_selected_window()
-
         SFT = signal.ShortTimeFFT(win=window,
                             mfft=int(self.fft_size.getInputText()),
                             hop=int(self.fft_hop.getInputText()),
                             fs=self.sample_rate_hz,  
                             fft_mode="onesided"
                             )
-        
         self.Sxx = SFT.stft(self.data[1,:])
+
+        # Process data further
+        self.apply_integration()
+
+        # Convert to logrithm
+        self.Sxx = 20*np.log10(np.abs(self.Sxx))
+
+        print(np.shape(self.Sxx))
     
+    def apply_integration(self):
+
+        # Split the array into groups
+        tmp = np.abs(self.Sxx)
+        averaging_count = int(self.integration_count.getInputText())
+        groups = np.array_split(self.Sxx, np.arange(averaging_count, tmp.shape[1], averaging_count), axis=1)
+        self.Sxx = np.array([group.sum(axis=1) for group in groups]).T
+
 app = QApplication([])
 window = MainWindow()
 app.exec()
