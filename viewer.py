@@ -120,14 +120,8 @@ class MainWindow(QMainWindow):
             self.show_popup("File Not Found")
             return False
 
-        SFT = signal.ShortTimeFFT( win=np.ones(int(self.fft_size.getInputText())),
-                                    mfft=int(self.fft_size.getInputText()),
-                                    hop=int(self.fft_hop.getInputText()),
-                                    fs=self.sample_rate_hz,  
-                                    fft_mode="onesided"
-                                    )
-        self.Sxx = SFT.stft(self.data[1,:])
-
+        self.generate_spectrogram_data()
+        
             # Split the array into groups
         tmp = np.abs(self.Sxx)
         averaging_count = int(self.integration_count.getInputText())
@@ -228,6 +222,17 @@ class MainWindow(QMainWindow):
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.exec()
 
+    def generate_spectrogram_data(self):
+
+        SFT = signal.ShortTimeFFT( win=np.ones(int(self.fft_size.getInputText())),
+                            mfft=int(self.fft_size.getInputText()),
+                            hop=int(self.fft_hop.getInputText()),
+                            fs=self.sample_rate_hz,  
+                            fft_mode="onesided"
+                            )
+        
+        self.Sxx = SFT.stft(self.data[1,:])
+    
 app = QApplication([])
 window = MainWindow()
 app.exec()
