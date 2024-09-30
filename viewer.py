@@ -5,6 +5,8 @@ from PyQt6.QtCore import *
 import librosa
 import librosa.display
 import pygame
+import time
+
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
@@ -123,10 +125,14 @@ class MainWindow(QMainWindow):
             self.show_popup("File Not Found")
             return False
 
+        msg = self.show_popup("Loading", False)
+
         self.generate_spectrogram_data()
 
         self.update_spectrogram_image()
         self.update_spectrum_image(0)
+
+        msg.close()
     
     def update_spectrogram_image(self):
         
@@ -231,12 +237,22 @@ class MainWindow(QMainWindow):
         pygame.mixer.music.play()
 
     
-    def show_popup(self, text):
+    def show_popup(self, text, use_button_continue = True):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Icon.Information)
         msg.setText(text) 
-        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg.exec()
+
+        if use_button_continue:
+            msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        else:
+            msg.setStandardButtons(QMessageBox.StandardButton.NoButton)
+
+        # Show the message box non-blocking
+        msg.show()
+        # Process pending events to ensure the text is displayed
+        QApplication.processEvents()
+
+        return msg
 
     def get_selected_window(self):
 
