@@ -97,14 +97,6 @@ class MainWindow(QMainWindow):
         self.plot_image_button.clicked.connect(lambda: self.update_images())
         input_layout.addWidget(self.plot_image_button)
 
-        self.save_image_button = QPushButton("Save Spectrogram")
-        self.save_image_button.clicked.connect(self.save_spectrogram_image)
-        input_layout.addWidget(self.save_image_button)
-
-        self.save_image_button = QPushButton("Save Spectrum")
-        self.save_image_button.clicked.connect(self.save_spectrum_image)
-        input_layout.addWidget(self.save_image_button)
-
         self.play_audio_button = QPushButton("Play Audio")
         self.play_audio_button.clicked.connect(self.play_audio)
         input_layout.addWidget(self.play_audio_button)
@@ -209,22 +201,6 @@ class MainWindow(QMainWindow):
             # Handle the case where no file was selected
             self.file_path_label.setText("No file selected")
 
-    def save_spectrogram_image(self):
-        # Open a file dialog to select where to save the image
-        save_path, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "PNG Files (*.png);;JPEG Files (*.jpg)")
-
-        if save_path:
-            # Save the current figure as an image
-            self.figure.savefig(save_path)
-
-    def save_spectrum_image(self):
-        # Open a file dialog to select where to save the image
-        save_path, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "PNG Files (*.png);;JPEG Files (*.jpg)")
-
-        if save_path:
-            # Save the current figure as an image
-            self.spectrum_figure.savefig(save_path)
-
     def load_audio_data(self):
 
         # First check if path exists
@@ -245,7 +221,6 @@ class MainWindow(QMainWindow):
         if self.num_channels == 1:
             self.data = np.reshape(self.data, [1,-1])
             print(np.shape( self.data))
-            
 
         return True
 
