@@ -137,7 +137,7 @@ class MainWindow(QMainWindow):
     def update_spectrogram_image(self):
         
         self.freq_max_khz = self.sample_rate_hz/(2*1000)
-        time_max_s = len(self.data[1,:])*1/self.sample_rate_hz
+        time_max_s = len(self.data[0,:])*1/self.sample_rate_hz
 
         # Plot the spectrogram
         self.axes.clear()
@@ -192,7 +192,6 @@ class MainWindow(QMainWindow):
 
             # Convert the time stamp to the index in spectorgram
             spectrogram_shape_tuple = np.shape(self.Sxx[0])
-            averaging_count = int(self.integration_count.getInputText())
             spectrum_column_index = int(np.floor(spectrogram_shape_tuple[1]*x_axis_timestamp/x_max))
 
             # Plot that part of the spectrogram
@@ -236,7 +235,17 @@ class MainWindow(QMainWindow):
         self.data, self.sample_rate_hz \
             = librosa.load(self.file_path_label.text(),sr=None, mono=False)
 
-        self.num_channels = np.shape(self.data)[0]
+        # Lets determine the number of audio channels
+        if len(np.shape(self.data)) == 1:
+            self.num_channels = 1
+        else:
+            self.num_channels = np.shape(self.data)[0]
+
+        # Then reshape to what the program expects in the case of one channel
+        if self.num_channels == 1:
+            self.data = np.reshape(self.data, [1,-1])
+            print(np.shape( self.data))
+            
 
         return True
 
