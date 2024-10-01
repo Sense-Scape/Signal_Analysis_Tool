@@ -165,9 +165,24 @@ class MainWindow(QMainWindow):
                 self.spectrum_axes.set_ylabel('Intensity [Arb dB]')
                 self.spectrum_axes.set_title(f'Spectrum Sample at Time of {slice_time} Seconds of \n ' + self.file_path_label.text())
 
+                self.set_spectrum_axes_limits()
+
                 # Update the column plot canvas
                 self.spectrum_canvas.draw()
+                
+    def set_spectrum_axes_limits(self):
+
+        selected_spectrum_mode = self.spectrum_mode.getInputText()
         
+        if selected_spectrum_mode == "Amplitude [dB]":
+           self.spectrum_axes.set_ylim([-60,60])
+        elif selected_spectrum_mode == "Amplitude [lin]":
+            self.spectrum_axes.set_ylim([-1,50])
+        elif selected_spectrum_mode == "Phase [Rad]":
+            self.spectrum_axes.set_ylim([-1.1*np.pi,1.1*np.pi])
+        elif selected_spectrum_mode == "Phase [Deg]":
+            self.spectrum_axes.set_ylim([-185,185])
+
     def on_click(self, event):
         if event.inaxes == self.axes:  # Ensure the click is inside the spectrogram plot
             
