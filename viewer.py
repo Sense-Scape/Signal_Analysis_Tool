@@ -155,13 +155,15 @@ class MainWindow(QMainWindow):
                 # Get the column corresponding to the clicked x-coordinate (time index)
                 column_data = self.Sxx[0][:, spectrum_column_index]
                 freq_axis = np.linspace(1,len(column_data),len(column_data))*self.freq_max_khz/len(column_data)
+                _, x_max = self.axes.get_xlim()
+                slice_time = np.round(x_max*spectrum_column_index/np.shape(self.Sxx[0])[1],1)
 
                 # Plot the column data (frequency vs. intensity)
                 self.spectrum_axes.clear()
                 self.spectrum_axes.plot(freq_axis,column_data)
                 self.spectrum_axes.set_xlabel('Frequency [KHz]')
                 self.spectrum_axes.set_ylabel('Intensity [Arb dB]')
-                self.spectrum_axes.set_title(f'Spectrum Sample at Time of {spectrum_column_index} Seconds of \n ' + self.file_path_label.text())
+                self.spectrum_axes.set_title(f'Spectrum Sample at Time of {slice_time} Seconds of \n ' + self.file_path_label.text())
 
                 # Update the column plot canvas
                 self.spectrum_canvas.draw()
