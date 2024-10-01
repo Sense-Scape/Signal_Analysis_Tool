@@ -220,10 +220,8 @@ class MainWindow(QMainWindow):
         # Then reshape to what the program expects in the case of one channel
         if self.num_channels == 1:
             self.data = np.reshape(self.data, [1,-1])
-            print(np.shape( self.data))
 
         return True
-
 
     def play_audio(self):
 
