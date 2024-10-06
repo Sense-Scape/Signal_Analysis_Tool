@@ -96,43 +96,42 @@ class MainWindow(QMainWindow):
 
         for i in range(self.num_channels):
             self.add_plot_tab(i)
-
-        self.generate_spectrogram_data()
-        self.update_spectrogram_image()
-        self.update_spectrum_image(0)
+            self.generate_spectrogram_data(i)
+            self.update_spectrogram_image(i)
+            self.update_spectrum_image(i, 0)
 
         msg.close()
     
-    def update_spectrogram_image(self):
+    def update_spectrogram_image(self, channel_index):
         
         self.freq_max_khz = self.sample_rate_hz/(2*1000)
         time_max_s = len(self.data[0,:])*1/self.sample_rate_hz
     
         # Plot the spectrogram
-        self.channel_plots[0].axes.clear()
-        self.channel_plots[0].axes.imshow(self.Sxx[0], origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
-        self.channel_plots[0].axes.set_xlabel('Time [s]')
-        self.channel_plots[0].axes.set_ylabel('Frequency [KHz]')
-        self.channel_plots[0].axes.set_title('Spectrogram of \n' + self.file_path_label.text())
+        self.channel_plots[channel_index].axes.clear()
+        self.channel_plots[channel_index].axes.imshow(self.Sxx[channel_index], origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
+        self.channel_plots[channel_index].axes.set_xlabel('Time [s]')
+        self.channel_plots[channel_index].axes.set_ylabel('Frequency [KHz]')
+        self.channel_plots[channel_index].axes.set_title('Spectrogram of \n' + self.file_path_label.text())
 
-        self.channel_plots[0].spectrogram_canvas.draw()
+        self.channel_plots[channel_index].spectrogram_canvas.draw()
         
-    def update_spectrum_image(self, spectrum_column_index):
+    def update_spectrum_image(self, channel_index, spectrum_column_index):
         
         if self.Sxx is not None:
                 
                 # Get the column corresponding to the clicked x-coordinate (time index)
-                column_data = self.Sxx[0][:, spectrum_column_index]
+                column_data = self.Sxx[channel_index][:, spectrum_column_index]
                 freq_axis = np.linspace(1,len(column_data),len(column_data))*self.freq_max_khz/len(column_data)
-                _, x_max = self.channel_plots[0].axes.get_xlim()
-                slice_time = np.round(x_max*spectrum_column_index/np.shape(self.Sxx[0])[1],1)
+                _, x_max = self.channel_plots[channel_index].axes.get_xlim()
+                slice_time = np.round(x_max*spectrum_column_index/np.shape(self.Sxx[channel_index])[1],1)
 
                 # Plot the column data (frequency vs. intensity)
-                self.channel_plots[0].spectrum_axes.clear()
-                self.channel_plots[0].spectrum_axes.plot(freq_axis,column_data)
-                self.channel_plots[0].spectrum_axes.set_xlabel('Frequency [KHz]')
-                self.channel_plots[0].spectrum_axes.set_ylabel('Intensity [Arb dB]')
-                self.channel_plots[0].spectrum_axes.set_title(f'Spectrum Sample at Time of {slice_time} Seconds of \n ' + self.file_path_label.text())
+                self.channel_plots[channel_index].spectrum_axes.clear()
+                self.channel_plots[channel_index].spectrum_axes.plot(freq_axis,column_data)
+                self.channel_plots[channel_index].spectrum_axes.set_xlabel('Frequency [KHz]')
+                self.channel_plots[channel_index].spectrum_axes.set_ylabel('Intensity [Arb dB]')
+                self.channel_plots[channel_index].spectrum_axes.set_title(f'Spectrum Sample at Time of {slice_time} Seconds of \n ' + self.file_path_label.text())
 
                 self.set_spectrum_axes_limits()
 
@@ -245,24 +244,24 @@ class MainWindow(QMainWindow):
 
         return window
     
-    def generate_spectrogram_data(self):
+    def generate_spectrogram_data(self, channel_index):
         
         # Generate spectrogram game
         self.Sxx = {}
         window = self.get_selected_window()
 
-        for i in range(self.num_channels):
-            SFT = signal.ShortTimeFFT(win=window,
-                                mfft=int(self.fft_size.getInputText()),
-                                hop=int(self.fft_hop.getInputText()),
-                                fs=self.sample_rate_hz,  
-                                fft_mode="onesided"
-                                )
-            self.Sxx[i] = SFT.stft(self.data[i,:])
+        SFT = signal.ShortTimeFFT(win=window,
+                            mfft=int(self.fft_size.getInputText()),
+                            hop=int(self.fft_hop.getInputText()),
+                            fs=self.sample_rate_hz,  
+                            fft_mode="onesided"
+                            )
+        
+        self.Sxx[channel_index] = SFT.stft(self.data[channel_index,:])
 
-            # Process data further
-            self.apply_integration(i)
-            self.apply_spectrum_mode(i)
+        # Process data further
+        self.apply_integration(channel_index)
+        self.apply_spectrum_mode(channel_index)
 
     
     def apply_integration(self, channel_index):
