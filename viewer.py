@@ -82,8 +82,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         # Connect the canvas click event
-        # self.spectrogram_canvas.mpl_connect('button_press_event', self.on_click)
-        self.Sxx = None  # Store spectrogram data
         self.showMaximized() 
 
     def update_images(self):
@@ -94,6 +92,7 @@ class MainWindow(QMainWindow):
 
         msg = self.show_popup("Loading", False)
 
+        self.Sxx = {}
         for i in range(self.num_channels):
             self.add_plot_tab(i)
             self.generate_spectrogram_data(i)
@@ -136,7 +135,7 @@ class MainWindow(QMainWindow):
                 self.set_spectrum_axes_limits()
 
                 # Update the column plot canvas
-                self.channel_plots[0].spectrum_canvas.draw()
+                self.channel_plots[channel_index].spectrum_canvas.draw()
                 
     def set_spectrum_axes_limits(self):
 
@@ -152,18 +151,21 @@ class MainWindow(QMainWindow):
             self.channel_plots[0].spectrum_axes.set_ylim([-185,185])
 
     def on_click(self, event):
-        if event.inaxes == self.axes:  # Ensure the click is inside the spectrogram plot
+        
+        for i in range(self.num_channels):
+
+            if event.inaxes == self.channel_plots[i].axes:  # Ensure the click is inside the spectrogram plot
             
-            # Check where one clicked 
-            x_axis_timestamp = int(event.xdata)
-            _, x_max = self.axes.get_xlim()
+                # Check where one clicked 
+                x_axis_timestamp = int(event.xdata)
+                _, x_max = self.channel_plots[i].axes.get_xlim()
 
-            # Convert the time stamp to the index in spectorgram
-            spectrogram_shape_tuple = np.shape(self.Sxx[0])
-            spectrum_column_index = int(np.floor(spectrogram_shape_tuple[1]*x_axis_timestamp/x_max))
+                # Convert the time stamp to the index in spectorgram
+                spectrogram_shape_tuple = np.shape(self.Sxx[i])
+                spectrum_column_index = int(np.floor(spectrogram_shape_tuple[1]*x_axis_timestamp/x_max))
 
-            # Plot that part of the spectrogram
-            self.update_spectrum_image(spectrum_column_index) 
+                # Plot that part of the spectrogram
+                self.update_spectrum_image(i, spectrum_column_index) 
 
     def load_file(self):
         # Open a file dialog to let the user select a file
@@ -247,7 +249,6 @@ class MainWindow(QMainWindow):
     def generate_spectrogram_data(self, channel_index):
         
         # Generate spectrogram game
-        self.Sxx = {}
         window = self.get_selected_window()
 
         SFT = signal.ShortTimeFFT(win=window,
@@ -315,6 +316,7 @@ class MainWindow(QMainWindow):
         toolbar_widget.setLayout(self.channel_plots[channel_index].plots_layout)
     
         self.channel_plots_tabs.addTab(toolbar_widget,"Channel " + str(channel_index))
+        self.channel_plots[channel_index].spectrogram_canvas.mpl_connect('button_press_event', self.on_click)
 
 
 app = QApplication([])
