@@ -19,6 +19,7 @@ import os
 
 from Components.HorizontalLabelInput import HorizontalLabelInput
 from Components.HorizontalLabelComboBox import HorizontalLabelComboBox
+from PlotConfig import PlotConfig
 
 class MainWindow(QMainWindow):
 
@@ -32,6 +33,7 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(layout)
 
         self.channel_plots_tabs = QTabWidget()
+        self.channel_plots = {}
 
         layout.addWidget(self.channel_plots_tabs)
 
@@ -105,15 +107,15 @@ class MainWindow(QMainWindow):
         
         self.freq_max_khz = self.sample_rate_hz/(2*1000)
         time_max_s = len(self.data[0,:])*1/self.sample_rate_hz
-
+    
         # Plot the spectrogram
-        self.axes.clear()
-        self.axes.imshow(self.Sxx[0], origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
-        self.axes.set_xlabel('Time [s]')
-        self.axes.set_ylabel('Frequency [KHz]')
-        self.axes.set_title('Spectrogram of \n' + self.file_path_label.text())
+        self.channel_plots[0].axes.clear()
+        self.channel_plots[0].axes.imshow(self.Sxx[0], origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
+        self.channel_plots[0].axes.set_xlabel('Time [s]')
+        self.channel_plots[0].axes.set_ylabel('Frequency [KHz]')
+        self.channel_plots[0].axes.set_title('Spectrogram of \n' + self.file_path_label.text())
 
-        self.spectrogram_canvas.draw()
+        self.channel_plots[0].spectrogram_canvas.draw()
         
     def update_spectrum_image(self, spectrum_column_index):
         
@@ -122,33 +124,33 @@ class MainWindow(QMainWindow):
                 # Get the column corresponding to the clicked x-coordinate (time index)
                 column_data = self.Sxx[0][:, spectrum_column_index]
                 freq_axis = np.linspace(1,len(column_data),len(column_data))*self.freq_max_khz/len(column_data)
-                _, x_max = self.axes.get_xlim()
+                _, x_max = self.channel_plots[0].axes.get_xlim()
                 slice_time = np.round(x_max*spectrum_column_index/np.shape(self.Sxx[0])[1],1)
 
                 # Plot the column data (frequency vs. intensity)
-                self.spectrum_axes.clear()
-                self.spectrum_axes.plot(freq_axis,column_data)
-                self.spectrum_axes.set_xlabel('Frequency [KHz]')
-                self.spectrum_axes.set_ylabel('Intensity [Arb dB]')
-                self.spectrum_axes.set_title(f'Spectrum Sample at Time of {slice_time} Seconds of \n ' + self.file_path_label.text())
+                self.channel_plots[0].spectrum_axes.clear()
+                self.channel_plots[0].spectrum_axes.plot(freq_axis,column_data)
+                self.channel_plots[0].spectrum_axes.set_xlabel('Frequency [KHz]')
+                self.channel_plots[0].spectrum_axes.set_ylabel('Intensity [Arb dB]')
+                self.channel_plots[0].spectrum_axes.set_title(f'Spectrum Sample at Time of {slice_time} Seconds of \n ' + self.file_path_label.text())
 
                 self.set_spectrum_axes_limits()
 
                 # Update the column plot canvas
-                self.spectrum_canvas.draw()
+                self.channel_plots[0].spectrum_canvas.draw()
                 
     def set_spectrum_axes_limits(self):
 
         selected_spectrum_mode = self.spectrum_mode.getInputText()
         
         if selected_spectrum_mode == "Amplitude [dB]":
-           self.spectrum_axes.set_ylim([-60,60])
+           self.channel_plots[0].spectrum_axes.set_ylim([-60,60])
         elif selected_spectrum_mode == "Amplitude [lin]":
-            self.spectrum_axes.set_ylim([-1,50])
+            self.channel_plots[0].spectrum_axes.set_ylim([-1,50])
         elif selected_spectrum_mode == "Phase [Rad]":
-            self.spectrum_axes.set_ylim([-1.1*np.pi,1.1*np.pi])
+            self.channel_plots[0].spectrum_axes.set_ylim([-1.1*np.pi,1.1*np.pi])
         elif selected_spectrum_mode == "Phase [Deg]":
-            self.spectrum_axes.set_ylim([-185,185])
+            self.channel_plots[0].spectrum_axes.set_ylim([-185,185])
 
     def on_click(self, event):
         if event.inaxes == self.axes:  # Ensure the click is inside the spectrogram plot
@@ -286,35 +288,32 @@ class MainWindow(QMainWindow):
 
     def add_plot_tab(self, channel_index):
 
-        plots_layout = QVBoxLayout()
+        self.channel_plots[channel_index] = PlotConfig()
+        self.channel_plots[channel_index].plots_layout = QVBoxLayout()
         
         ###     Spectrogram     ###
-
-        # Plot area for the spectrogram
-        self.figure, self.axes = plt.subplots()
-        self.figure.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.15)
-        self.spectrogram_canvas = FigureCanvasQTAgg(self.figure)
-        self.axes.plot([],[])
+        self.channel_plots[channel_index].figure, self.channel_plots[channel_index].axes = plt.subplots()
+        self.channel_plots[channel_index].figure.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.15)
+        self.channel_plots[channel_index].spectrogram_canvas = FigureCanvasQTAgg(self.channel_plots[channel_index].figure)
+        self.channel_plots[channel_index].axes.plot([],[])
 
         # Toolbar and figure layout
-        plots_layout.addWidget(NavigationToolbar(self.spectrogram_canvas, self))
-        plots_layout.addWidget(self.spectrogram_canvas)
+        self.channel_plots[channel_index].plots_layout.addWidget(NavigationToolbar(self.channel_plots[channel_index].spectrogram_canvas, self))
+        self.channel_plots[channel_index].plots_layout.addWidget(self.channel_plots[channel_index].spectrogram_canvas)
 
         ###     Spectrum     ###
-
-        # Add a second figure for plotting the column data
-        self.spectrum_figure, self.spectrum_axes = plt.subplots()
-        self.spectrum_figure.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.15)
-        self.spectrum_canvas = FigureCanvasQTAgg(self.spectrum_figure)
-        self.spectrum_axes.plot([],[])
+        self.channel_plots[channel_index].spectrum_figure, self.channel_plots[channel_index].spectrum_axes = plt.subplots()
+        self.channel_plots[channel_index].spectrum_figure.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.15)
+        self.channel_plots[channel_index].spectrum_canvas = FigureCanvasQTAgg(self.channel_plots[channel_index].spectrum_figure)
+        self.channel_plots[channel_index].spectrum_axes.plot([],[])
 
         # Toolbar and figure layout
-        plots_layout.addWidget(NavigationToolbar(self.spectrum_canvas, self))
-        plots_layout.addWidget(self.spectrum_canvas)
+        self.channel_plots[channel_index].plots_layout.addWidget(NavigationToolbar(self.channel_plots[channel_index].spectrum_canvas, self))
+        self.channel_plots[channel_index].plots_layout.addWidget(self.channel_plots[channel_index].spectrum_canvas)
 
         # Create a new widget to hold the spectrogran_toolbar_layout
         toolbar_widget = QWidget()
-        toolbar_widget.setLayout(plots_layout)
+        toolbar_widget.setLayout(self.channel_plots[channel_index].plots_layout)
     
         self.channel_plots_tabs.addTab(toolbar_widget,"Channel " + str(channel_index))
 
