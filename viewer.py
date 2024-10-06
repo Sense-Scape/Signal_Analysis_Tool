@@ -31,36 +31,9 @@ class MainWindow(QMainWindow):
         layout = QHBoxLayout()  # Use QHBoxLayout for horizontal arrangement
         central_widget.setLayout(layout)
 
-        plots_layout = QVBoxLayout()
-        
-        ###     Spectrogram     ###
+        self.channel_plots_tabs = QTabWidget()
 
-        # Plot area for the spectrogram
-        self.figure, self.axes = plt.subplots()
-        self.figure.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.15)
-        self.spectrogram_canvas = FigureCanvasQTAgg(self.figure)
-        self.axes.plot([],[])
-
-        # Toolbar and figure layout
-        plots_layout.addWidget(NavigationToolbar(self.spectrogram_canvas, self))
-        plots_layout.addWidget(self.spectrogram_canvas)
-
-        ###     Spectrum     ###
-
-        # Add a second figure for plotting the column data
-        self.spectrum_figure, self.spectrum_axes = plt.subplots()
-        self.spectrum_figure.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.15)
-        self.spectrum_canvas = FigureCanvasQTAgg(self.spectrum_figure)
-        self.spectrum_axes.plot([],[])
-
-        # Toolbar and figure layout
-        plots_layout.addWidget(NavigationToolbar(self.spectrum_canvas, self))
-        plots_layout.addWidget(self.spectrum_canvas)
-
-        # Create a new widget to hold the spectrogran_toolbar_layout
-        toolbar_widget = QWidget()
-        toolbar_widget.setLayout(plots_layout)
-        layout.addWidget(toolbar_widget)
+        layout.addWidget(self.channel_plots_tabs)
 
         ###
 
@@ -107,7 +80,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         # Connect the canvas click event
-        self.spectrogram_canvas.mpl_connect('button_press_event', self.on_click)
+        # self.spectrogram_canvas.mpl_connect('button_press_event', self.on_click)
         self.Sxx = None  # Store spectrogram data
         self.showMaximized() 
 
@@ -119,8 +92,10 @@ class MainWindow(QMainWindow):
 
         msg = self.show_popup("Loading", False)
 
-        self.generate_spectrogram_data()
+        for i in range(self.num_channels):
+            self.add_plot_tab(i)
 
+        self.generate_spectrogram_data()
         self.update_spectrogram_image()
         self.update_spectrum_image(0)
 
@@ -308,6 +283,41 @@ class MainWindow(QMainWindow):
             self.Sxx[channel_index] = np.angle(self.Sxx[channel_index], deg=False)
         elif selected_spectrum_mode == "Phase [Deg]":
             self.Sxx[channel_index] = np.angle(self.Sxx[channel_index], deg=True)
+
+    def add_plot_tab(self, channel_index):
+
+        plots_layout = QVBoxLayout()
+        
+        ###     Spectrogram     ###
+
+        # Plot area for the spectrogram
+        self.figure, self.axes = plt.subplots()
+        self.figure.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.15)
+        self.spectrogram_canvas = FigureCanvasQTAgg(self.figure)
+        self.axes.plot([],[])
+
+        # Toolbar and figure layout
+        plots_layout.addWidget(NavigationToolbar(self.spectrogram_canvas, self))
+        plots_layout.addWidget(self.spectrogram_canvas)
+
+        ###     Spectrum     ###
+
+        # Add a second figure for plotting the column data
+        self.spectrum_figure, self.spectrum_axes = plt.subplots()
+        self.spectrum_figure.subplots_adjust(left=0.1, right=0.95, top=0.85, bottom=0.15)
+        self.spectrum_canvas = FigureCanvasQTAgg(self.spectrum_figure)
+        self.spectrum_axes.plot([],[])
+
+        # Toolbar and figure layout
+        plots_layout.addWidget(NavigationToolbar(self.spectrum_canvas, self))
+        plots_layout.addWidget(self.spectrum_canvas)
+
+        # Create a new widget to hold the spectrogran_toolbar_layout
+        toolbar_widget = QWidget()
+        toolbar_widget.setLayout(plots_layout)
+    
+        self.channel_plots_tabs.addTab(toolbar_widget,"Channel " + str(channel_index))
+
 
 app = QApplication([])
 window = MainWindow()
