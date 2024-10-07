@@ -94,6 +94,11 @@ class MainWindow(QMainWindow):
         msg = self.show_popup("Loading", False)
 
         self.Sxx = {}
+
+        if self.num_channels:
+            for i in range(self.num_channels):
+                self.remove_plot_tab(i)
+
         for i in range(self.num_channels):
             self.add_plot_tab(i)
             self.generate_spectrogram_data(i)
@@ -133,23 +138,23 @@ class MainWindow(QMainWindow):
                 self.channel_plots[channel_index].spectrum_axes.set_ylabel('Intensity [Arb dB]')
                 self.channel_plots[channel_index].spectrum_axes.set_title(f'Spectrum Sample at Time of {slice_time} Seconds of \n ' + self.file_path_label.text())
 
-                self.set_spectrum_axes_limits()
+                self.set_spectrum_axes_limits(channel_index)
 
                 # Update the column plot canvas
                 self.channel_plots[channel_index].spectrum_canvas.draw()
                 
-    def set_spectrum_axes_limits(self):
+    def set_spectrum_axes_limits(self,channel_index):
 
         selected_spectrum_mode = self.spectrum_mode.getInputText()
         
         if selected_spectrum_mode == "Amplitude [dB]":
-           self.channel_plots[0].spectrum_axes.set_ylim([-60,60])
+           self.channel_plots[channel_index].spectrum_axes.set_ylim([-60,60])
         elif selected_spectrum_mode == "Amplitude [lin]":
-            self.channel_plots[0].spectrum_axes.set_ylim([-1,50])
+            self.channel_plots[channel_index].spectrum_axes.set_ylim([-1,50])
         elif selected_spectrum_mode == "Phase [Rad]":
-            self.channel_plots[0].spectrum_axes.set_ylim([-1.1*np.pi,1.1*np.pi])
+            self.channel_plots[channel_index].spectrum_axes.set_ylim([-1.1*np.pi,1.1*np.pi])
         elif selected_spectrum_mode == "Phase [Deg]":
-            self.channel_plots[0].spectrum_axes.set_ylim([-185,185])
+            self.channel_plots[channel_index].spectrum_axes.set_ylim([-185,185])
 
     def on_click(self, event):
         
@@ -169,11 +174,6 @@ class MainWindow(QMainWindow):
                 self.update_spectrum_image(i, spectrum_column_index) 
 
     def load_file(self):
-
-        # Clear current tabs if they exist
-        if self.num_channels:
-            for i in range(self.num_channels):
-                self.remove_plot_tab(i)
 
         # Open a file dialog to let the user select a file
         file_path, _ = QFileDialog.getOpenFileName(self, "Select File", "", "*.wav")
