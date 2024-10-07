@@ -34,6 +34,7 @@ class MainWindow(QMainWindow):
 
         self.channel_plots_tabs = QTabWidget()
         self.channel_plots = {}
+        self.num_channels = 0
 
         layout.addWidget(self.channel_plots_tabs)
 
@@ -168,6 +169,12 @@ class MainWindow(QMainWindow):
                 self.update_spectrum_image(i, spectrum_column_index) 
 
     def load_file(self):
+
+        # Clear current tabs if they exist
+        if self.num_channels:
+            for i in range(self.num_channels):
+                self.remove_plot_tab(i)
+
         # Open a file dialog to let the user select a file
         file_path, _ = QFileDialog.getOpenFileName(self, "Select File", "", "*.wav")
 
@@ -178,7 +185,9 @@ class MainWindow(QMainWindow):
         else:
             # Handle the case where no file was selected
             self.file_path_label.setText("No file selected")
-
+            return
+        
+        
     def load_audio_data(self):
 
         # First check if path exists
@@ -285,6 +294,10 @@ class MainWindow(QMainWindow):
             self.Sxx[channel_index] = np.angle(self.Sxx[channel_index], deg=False)
         elif selected_spectrum_mode == "Phase [Deg]":
             self.Sxx[channel_index] = np.angle(self.Sxx[channel_index], deg=True)
+
+    def remove_plot_tab(self, channel_index):
+        self.channel_plots[channel_index] = PlotConfig()
+        self.channel_plots_tabs.removeTab(0)
 
     def add_plot_tab(self, channel_index):
 
