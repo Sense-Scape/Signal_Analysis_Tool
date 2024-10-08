@@ -19,3 +19,33 @@ class HorizontalLabelComboBox(QWidget):
 
     def getInputText(self):
         return self.combo_box.currentText()
+    
+    def set_items(self, items):
+        self.combo_box.clear()
+        self.combo_box.addItems(items)
+
+    def enable(self):
+        self.combo_box.setEnabled(True)
+        self.description_label.setStyleSheet("color: black;")
+        self.combo_box.setStyleSheet("""
+            QComboBox {
+                background-color: white;
+                color: black;
+            }
+            QComboBox:hover {
+                background-color: lightblue;
+            }
+        """)
+
+    def disable(self):
+        self.combo_box.setEnabled(False)
+        self.combo_box.setStyleSheet("""
+            QComboBox {
+                background: lightgrey;
+                color: darkgrey;
+            }
+            QComboBox:hover {
+                background: lightgrey;
+            }
+        """)
+        self.description_label.setStyleSheet("color: grey;")

@@ -61,11 +61,18 @@ class MainWindow(QMainWindow):
         self.fft_window = HorizontalLabelComboBox("FFT Window", ["Rect", "Hanning", "Hamming", "Blackman"])
         self.spectrum_mode = HorizontalLabelComboBox("Spectrum Mode", ["Amplitude [dB]", "Amplitude [lin]", "Phase [Rad]", "Phase [Deg]"])
 
+        self.phase_channel_one = HorizontalLabelComboBox("Phase Channel One", [])
+        self.phase_channel_one.disable()
+        self.phase_channel_two = HorizontalLabelComboBox("Phase Channel Two", [])
+        self.phase_channel_two.disable()
+
         input_layout.addWidget(self.fft_size)
         input_layout.addWidget(self.fft_hop)
         input_layout.addWidget(self.integration_count)
         input_layout.addWidget(self.fft_window)
         input_layout.addWidget(self.spectrum_mode)
+        input_layout.addWidget(self.phase_channel_one)
+        input_layout.addWidget(self.phase_channel_two)
 
         # Buttons
 
@@ -184,12 +191,25 @@ class MainWindow(QMainWindow):
         self.load_audio_data()
 
         if self.num_channels > 1:
-            #TODO: Allow phase analysis
-            pass
+            self.enable_phase_analysis_options()
+        else:
+            self.disable_phase_analysis_options()
+
 
             
-        
-        
+    def enable_phase_analysis_options(self):
+        channel_indicies = [str(i) for i in range(self.num_channels)]
+        self.phase_channel_one.enable()
+        self.phase_channel_one.set_items(channel_indicies)
+        self.phase_channel_two.enable()
+        self.phase_channel_two.set_items(channel_indicies)
+
+    def disable_phase_analysis_options(self):
+        self.phase_channel_one.disable()
+        self.phase_channel_one.set_items([])
+        self.phase_channel_two.disable()
+        self.phase_channel_two.set_items([])
+
     def load_audio_data(self):
 
         # First check if path exists

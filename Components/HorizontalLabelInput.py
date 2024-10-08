@@ -19,3 +19,9 @@ class HorizontalLabelInput(QWidget):
 
     def getInputText(self):
         return self.edit_box.text()
+    
+    def enable(self):
+        self.edit_box.setEnabled(True)
+
+    def disable(self):
+        self.edit_box.setEnabled(False)
