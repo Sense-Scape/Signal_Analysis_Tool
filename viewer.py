@@ -87,10 +87,6 @@ class MainWindow(QMainWindow):
 
     def update_images(self):
 
-        if not(self.load_audio_data()):
-            self.show_popup("File Not Found")
-            return False
-
         msg = self.show_popup("Loading", False)
 
         self.Sxx = {}
@@ -179,13 +175,19 @@ class MainWindow(QMainWindow):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select File", "", "*.wav")
 
         # Check if a file was selected
-        if file_path:
-            # Update the label to display the selected file path
-            self.file_path_label.setText(f"{file_path}")
-        else:
-            # Handle the case where no file was selected
+        if not(file_path):
             self.file_path_label.setText("No file selected")
             return
+        
+        # Update the label to display the selected file path
+        self.file_path_label.setText(f"{file_path}")
+        self.load_audio_data()
+
+        if self.num_channels > 1:
+            #TODO: Allow phase analysis
+            pass
+
+            
         
         
     def load_audio_data(self):
