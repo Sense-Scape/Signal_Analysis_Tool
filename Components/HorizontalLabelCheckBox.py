@@ -16,8 +16,8 @@ class HorizontalCheckbox(QWidget):
 
         self.setLayout(layout)
 
-    def getInputText(self):
-        return self.check_box.text()
+    def get_check_state(self):
+        return self.check_box.checkState()
     
     def enable(self):
         self.check_box.setEnabled(True)

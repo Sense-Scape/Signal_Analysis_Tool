@@ -103,18 +103,69 @@ class MainWindow(QMainWindow):
 
         self.Sxx = {}
 
-        if self.num_channels:
-            for i in range(self.num_channels):
-                self.remove_plot_tab(i)
+        self.remove_all_tabs()
 
         for i in range(self.num_channels):
             self.add_plot_tab(i)
             self.generate_spectrogram_data(i)
+            self.apply_integration(i)
+            self.apply_spectrum_mode(i)
             self.update_spectrogram_image(i)
             self.update_spectrum_image(i, 0)
 
+        if self.enabled_phase_check_box.get_check_state():
+            self.add_plot_tab(self.num_channels + 1)
+            self.update_differential_image()
+            self.update_spectrum_image(self.num_channels + 1, 0)
+
+
         msg.close()
     
+    def remove_all_tabs(self):
+
+        if self.num_channels:
+            for i in range(self.num_channels):
+                self.remove_plot_tab(i)
+            
+            # phase is always channels + 1
+            if self.enabled_phase_check_box.get_check_state():
+                self.remove_plot_tab(self.num_channels + 1)
+
+    def update_differential_image(self):
+
+        window = self.get_selected_window()
+
+        SFT = signal.ShortTimeFFT(win=window,
+                            mfft=int(self.fft_size.getInputText()),
+                            hop=int(self.fft_hop.getInputText()),
+                            fs=self.sample_rate_hz,  
+                            fft_mode="onesided"
+                            )
+        
+        channel_one = int(self.phase_channel_one.getInputText())
+        channel_two = int(self.phase_channel_two.getInputText())
+
+        Axx1 = np.angle(SFT.stft(self.data[channel_one,:]), deg=True)
+        Axx2 = np.angle(SFT.stft(self.data[channel_two,:]), deg=True)
+        A = Axx1 - Axx2
+
+        
+        channel_index = self.num_channels + 1
+        self.Sxx[channel_index] = A
+
+        self.freq_max_khz = self.sample_rate_hz/(2*1000)
+        time_max_s = len(self.data[0,:])*1/self.sample_rate_hz
+
+        # Plot the spectrogram
+        self.channel_plots[channel_index].axes.clear()
+        image  = self.channel_plots[channel_index].axes.imshow(A, origin='lower', aspect="auto", extent=[0,time_max_s, -180,180 ], cmap='viridis')
+        cbar = self.channel_plots[channel_index].figure.colorbar(image, ax=self.channel_plots[channel_index].axes)
+        self.channel_plots[channel_index].axes.set_xlabel('Time [s]')
+        self.channel_plots[channel_index].axes.set_ylabel('Phase [Deg]')
+        self.channel_plots[channel_index].axes.set_title('Spectrogram of \n' + self.file_path_label.text())
+
+        self.channel_plots[channel_index].spectrogram_canvas.draw()
+
     def update_spectrogram_image(self, channel_index):
         
         self.freq_max_khz = self.sample_rate_hz/(2*1000)
@@ -305,10 +356,6 @@ class MainWindow(QMainWindow):
                             )
         
         self.Sxx[channel_index] = SFT.stft(self.data[channel_index,:])
-
-        # Process data further
-        self.apply_integration(channel_index)
-        self.apply_spectrum_mode(channel_index)
 
     
     def apply_integration(self, channel_index):
