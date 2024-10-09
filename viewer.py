@@ -183,6 +183,8 @@ class MainWindow(QMainWindow):
 
     def load_file(self):
 
+        msg = self.show_popup("Loading", False)
+
         # Open a file dialog to let the user select a file
         file_path, _ = QFileDialog.getOpenFileName(self, "Select File", "", "*.wav")
 
@@ -199,6 +201,8 @@ class MainWindow(QMainWindow):
             self.enable_phase_analysis_options()
         else:
             self.disable_phase_analysis_options()
+        
+        msg.close()
 
 
             
