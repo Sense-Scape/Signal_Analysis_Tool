@@ -110,10 +110,14 @@ class MainWindow(QMainWindow):
     
         # Plot the spectrogram
         self.channel_plots[channel_index].axes.clear()
-        self.channel_plots[channel_index].axes.imshow(self.Sxx[channel_index], origin='lower', aspect="auto", extent=[0,time_max_s, 0, self.freq_max_khz])
         self.channel_plots[channel_index].axes.set_xlabel('Time [s]')
         self.channel_plots[channel_index].axes.set_ylabel('Frequency [KHz]')
         self.channel_plots[channel_index].axes.set_title('Spectrogram of \n' + self.file_path_label.text())
+
+        im = self.channel_plots[channel_index].axes.imshow(
+            self.Sxx[channel_index], origin='lower', aspect="auto", extent=[0, time_max_s, 0, self.freq_max_khz]
+        )
+        self.channel_plots[channel_index].figure.colorbar(im, ax=self.channel_plots[channel_index].axes)
 
         self.channel_plots[channel_index].spectrogram_canvas.draw()
         
